@@ -26,3 +26,5 @@ webdataset
 wheel
 sentencepiece
 flask==2.1.0
+nltk
+inflect
