@@ -348,14 +348,25 @@ def search_api():
         images_to_show = [np.float32(r_img) / 255 for r_img in all_raw_images]
 
     # save images to disk for local viewing
+    # make a directory to save images, if it doesn't exist
+    dirpath = "static/generated/multimodal_search"
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
+
+    return_filepaths = []
+
     for i, img in enumerate(images_to_show):
         img = np.clip(img, 0, 1)
-        with open(f"static/{i}.jpg", "wb") as f:
+
+        filepath = os.path.join(dirpath, f"{i}.jpg")
+        return_filepaths.append(filepath)
+
+        with open(filepath, "wb") as f:
             pltimg.imsave(f, img)
 
-    images = [encode_image(img) for img in images_to_show]
+    # images = [encode_image(img) for img in images_to_show]
 
-    return {"images": images}
+    return {"images": return_filepaths}
 
 
 @app.route("/api/vqa", methods=["POST"])
@@ -445,7 +456,7 @@ def text_localization_api():
 
     # words
     qry_tok = bert_tokenizer(qry, return_tensors="pt").to(device)
-    words = bert_tokenizer.decode(qry_tok.input_ids[0][1:-1]).split()
+    words = [bert_tokenizer.decode([tk]) for tk in qry_tok.input_ids[0][1:-1]]
     # print(words)
 
     # compute gradcam
@@ -455,23 +466,30 @@ def text_localization_api():
     norm_img = np.float32(resized_image) / 255
 
     gradcam, _ = compute_gradcam(model, img, qry, qry_tok, block_num=layer_num)
-    gradcam = [getAttMap(norm_img, gc, blur=True) for gc in gradcam[0][1:-1]]
+    gradcam = [getAttMap(norm_img, gc, blur=True) for gc in gradcam[0]]
+
+    dirpath = "static/generated/text_localization"
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
+
+    return_filepaths = []
 
     for i, img in enumerate(gradcam):
         img = np.clip(img, 0, 1)
-        with open(f"static/tl_{i}.jpg", "wb") as f:
+        filepath = os.path.join(dirpath, f"{i}.jpg")
+        return_filepaths.append(filepath)
+        with open(filepath, "wb") as f:
             pltimg.imsave(f, img)
 
-    gradcam_img = [encode_image(img) for img in gradcam]
+    # gradcam_img = [encode_image(img) for img in gradcam]
+    gradcam_img = return_filepaths
 
     # avg_grad cam should be displayed standalone
     # token_gradcam should be displayed accompanied with words
-    avg_gradcam = gradcam_img[0]
+    avg_gradcam = gradcam_img[1]
     tok_gradcam = gradcam_img[2:-1]
 
-    return jsonify(
-        {"token_gradcam": tok_gradcam, "avg_gradcam": avg_gradcam, "word": words}
-    )
+    return {"token_gradcam": tok_gradcam, "avg_gradcam": avg_gradcam, "word": words}
 
 
 @app.route("/api/caption", methods=["POST"])
