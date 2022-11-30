@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lavis-deployment
+spec:
+  selector:
+    matchLabels:
+      app: lavis-app
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app: lavis-app
+    spec:
+      volumes:
+        - name: sfr-home-pv-demo-team
+          persistentVolumeClaim:
+            claimName: sfr-home-pvc-demo-team
+        - name: sfr-share-pv-demo-team
+          persistentVolumeClaim:
+            claimName: sfr-share-pvc-demo-team
+      containers:
+      - name: lavis
+        image: "gcr.io/salesforce-research-internal/lavis_flask_gpu"
+        imagePullPolicy: "Always"
+        resources:
+          limits:
+            memory: "20Gi"
+            nvidia.com/gpu: 1
+            cpu: "2"
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+          - name: sfr-home-pv-demo-team
+            mountPath: "/export/home"
+          - name: sfr-share-pv-demo-team
+            mountPath: "/export/share"
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-v100
+      tolerations:
+      - key: "gpu_num"
+        operator: "Equal"
+        value: "2"
+        effect: "NoSchedule"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lavis-svc
+  labels:
+    app: lavis-app
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 35.222.116.79
+  loadBalancerSourceRanges:
+    - "204.14.232.0/21"
+    - "202.95.77.64/27"
+    - "13.110.54.0/26"
+    - "34.67.194.60/32"
+    - "10.136.0.0/14"
+  ports:
+    - port: 5000
+      targetPort: 5000
+  selector:
+    app: lavis-app
