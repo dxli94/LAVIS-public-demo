@@ -17,7 +17,10 @@ import nltk
 
 nltk.download("omw-1.4")
 
-from pattern.en import pluralize, singularize
+import inflect
+
+inf_engine = inflect.engine()
+
 
 # read text file line by line and return a list
 def read_file(file_path):
@@ -43,13 +46,13 @@ def neutralize_gender(text):
         token = token.lower()
 
         # if it is plural, make it singular
-        singular_form = singularize(token)
+        singular_form = inf_engine.singular_noun(token)
         is_plural = singular_form != token
 
         if singular_form in rplc:
             token_neutral = rplc[singular_form]
             if is_plural:
-                token_neutral = pluralize(token_neutral)
+                token_neutral = inf_engine.plural(token_neutral)
 
             tokens_neutral.append(token_neutral)
         else:
