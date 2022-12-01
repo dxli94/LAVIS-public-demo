@@ -49,7 +49,7 @@ RUN curl https://www.googleapis.com/storage/v1/b/aai-blog-files/o/sd-v1-4.ckpt?a
 ENV PYTHONPATH="${PYTHONPATH}:./:/lavis_app:/lavis_app/stable-diffusion"
 
 EXPOSE 5000
-
-ENTRYPOINT ["python3", "/lavis_app/app/main_flask.py" ]
+WORKDIR /lavis_app/app
+ENTRYPOINT ["python3", "main_flask.py" ]
 #ENTRYPOINT ["sleep", "infinity"]
 
